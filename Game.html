@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Year 3 Ultimate Pro</title>
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    
+    <style>
+        :root { --math: #3498db; --english: #9b59b6; --science: #2ecc71; --bg: #f4f7f6; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); margin: 0; display: flex; justify-content: center; }
+        #app-container { width: 100%; max-width: 500px; background: white; min-height: 100vh; display: flex; flex-direction: column; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
+        
+        /* Header & Progress */
+        .header { padding: 20px; background: #2c3e50; color: white; }
+        .stats { display: flex; justify-content: space-between; margin-bottom: 10px; font-weight: bold; }
+        .progress-bg { height: 10px; background: rgba(255,255,255,0.2); border-radius: 5px; }
+        #progress-fill { height: 100%; width: 0%; background: #f1c40f; border-radius: 5px; transition: 0.5s; }
+
+        /* Question Area */
+        .content { padding: 30px; flex-grow: 1; text-align: center; }
+        .subject-pill { display: inline-block; padding: 4px 15px; border-radius: 20px; color: white; font-size: 12px; margin-bottom: 15px; }
+        #question { font-size: 22px; color: #333; margin-bottom: 25px; line-height: 1.4; }
+        
+        /* Buttons */
+        .options-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+        button { padding: 16px; border: 2px solid #eee; border-radius: 12px; background: white; cursor: pointer; font-size: 16px; font-weight: 600; transition: 0.2s; }
+        button:active { transform: scale(0.98); }
+        .correct { background: #2ecc71 !important; color: white; border-color: #27ae60 !important; }
+        .wrong { background: #e74c3c !important; color: white; border-color: #c0392b !important; }
+        
+        /* Feedback Box */
+        #explanation-box { margin-top: 20px; padding: 15px; border-radius: 10px; background: #fff3cd; color: #856404; display: none; font-size: 14px; text-align: left; }
+        
+        #controls { padding: 20px; }
+        .action-btn { width: 100%; padding: 18px; border: none; border-radius: 12px; background: #2c3e50; color: white; font-size: 18px; display: none; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<div id="app-container">
+    <div class="header">
+        <div class="stats">
+            <span>Level 3: Q <span id="q-num">1</span></span>
+            <span>Best: <span id="high-score">0</span></span>
+            <span>Score: <span id="current-score">0</span></span>
+        </div>
+        <div class="progress-bg"><div id="progress-fill"></div></div>
+    </div>
+
+    <div class="content">
+        <div id="subject-tag" class="subject-pill">Topic</div>
+        <div id="question">Loading challenge...</div>
+        <div class="options-grid" id="options"></div>
+        <div id="explanation-box"></div>
+    </div>
+
+    <div id="controls">
+        <button id="next-btn" class="action-btn" onclick="nextQuestion()">Continue ➔</button>
+    </div>
+</div>
+
+<script>
+    let score = 0;
+    let qCount = 1;
+    let currentCorrectIdx = 0;
+    const maxQuestions = 100;
+
+    // --- SMART GENERATORS ---
+    const generators = {
+        Maths: () => {
+            const type = Math.random();
+            let q, ans, exp;
+            if (type < 0.4) { // 3, 4, 8 Times Tables
+                const tables = [3, 4, 8];
+                const t = tables[Math.floor(Math.random()*tables.length)];
+                const n = Math.floor(Math.random()*12)+1;
+                q = `What is ${t} x ${n}?`;
+                ans = t * n;
+                exp = `Remember: ${t} groups of ${n} equals ${ans}.`;
+            } else { // Place Value / Addition
+                const n1 = Math.floor(Math.random()*900)+100;
+                q = `What is the value of the digit ${String(n1)[0]} in ${n1}?`;
+                ans = parseInt(String(n1)[0]) * 100;
+                exp = `The first digit is in the HUNDREDS place.`;
+            }
+            return { q, ans, exp, col: 'var(--math)' };
+        },
+        English: () => {
+            const words = [
+                {w: "Straight", type: "adjective", s: "Strait"},
+                {w: "Believe", type: "verb", s: "Beleeve"},
+                {w: "Often", type: "adverb", s: "Ofen"}
+            ];
+            const pick = words[Math.floor(Math.random()*words.length)];
+            const mode = Math.random() > 0.5;
+            return {
+                q: mode ? `Pick the correct spelling:` : `What type of word is "${pick.w}"?`,
+                ans: mode ? pick.w : pick.type,
+                others: mode ? [pick.s, "Strate", "Strayt"] : ["Noun", "Conjunction", "Preposition"],
+                exp: mode ? `${pick.w} is a Year 3 statutory spelling word.` : `Words that describe actions or states are verbs.`,
+                col: 'var(--english)'
+            };
+        },
+        Science: () => {
+            const facts = [
+                {q: "Which rock is formed from layers of mud?", a: "Sedimentary", e: "Sedimentary rocks like sandstone form over millions of years."},
+                {q: "What part of the skeleton protects the heart?", a: "Rib cage", e: "The ribs act like a cage for your heart and lungs."},
+                {q: "Which of these is NOT a light source?", a: "The Moon", e: "The Moon reflects light; it does not make its own!"}
+            ];
+            const pick = facts[Math.floor(Math.random()*facts.length)];
+            return { q: pick.q, ans: pick.a, exp: pick.e, col: 'var(--science)' };
+        }
+    };
+
+    function loadQuestion() {
+        const subjects = Object.keys(generators);
+        const subName = subjects[Math.floor(Math.random()*subjects.length)];
+        const data = generators[subName]();
+        
+        // Setup UI
+        document.getElementById("subject-tag").innerText = subName;
+        document.getElementById("subject-tag").style.background = data.col;
+        document.getElementById("question").innerText = data.q;
+        document.getElementById("explanation-box").style.display = "none";
+        document.getElementById("explanation-box").innerText = "Tip: " + data.exp;
+
+        // Setup Options
+        let choices = data.others || [data.ans, Number(data.ans)+10, Number(data.ans)-2, Number(data.ans)+5];
+        choices = [...new Set(choices)].sort(() => Math.random() - 0.5);
+        currentCorrectIdx = choices.indexOf(data.ans);
+        if(currentCorrectIdx === -1) { choices[0] = data.ans; currentCorrectIdx = 0; }
+
+        const optGrid = document.getElementById("options");
+        optGrid.innerHTML = "";
+        choices.forEach((text, i) => {
+            const b = document.createElement("button");
+            b.innerText = text;
+            b.onclick = () => checkAnswer(i, b);
+            optGrid.appendChild(b);
+        });
+
+        document.getElementById("next-btn").style.display = "none";
+        document.getElementById("high-score").innerText = localStorage.getItem('y3high') || 0;
+    }
+
+    function checkAnswer(idx, btn) {
+        const all = document.querySelectorAll(".options-grid button");
+        if(idx === currentCorrectIdx) {
+            btn.classList.add("correct");
+            score += 10;
+        } else {
+            btn.classList.add("wrong");
+            all[currentCorrectIdx].classList.add("correct");
+            document.getElementById("explanation-box").style.display = "block";
+        }
+        all.forEach(b => b.disabled = true);
+        document.getElementById("current-score").innerText = score;
+        document.getElementById("next-btn").style.display = "block";
+        
+        // Save high score
+        const high = localStorage.getItem('y3high') || 0;
+        if(score > high) localStorage.setItem('y3high', score);
+    }
+
+    function nextQuestion() {
+        if(qCount < maxQuestions) {
+            qCount++;
+            document.getElementById("q-num").innerText = qCount;
+            document.getElementById("progress-fill").style.width = (qCount/maxQuestions*100) + "%";
+            loadQuestion();
+        } else {
+            alert("Amazing! You finished the Year 3 Marathon!");
+            location.reload();
+        }
+    }
+
+    loadQuestion();
+</script>
+
+</body>
+</html>
