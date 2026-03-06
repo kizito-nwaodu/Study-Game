@@ -1,0 +1,1442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BrainSpark – Quiz for All Ages</title>
+<meta name="mobile-web-app-capable" content="yes">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700;800&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════
+   DESIGN SYSTEM
+═══════════════════════════════════════ */
+:root {
+  --brand: #ff6b35;
+  --brand2: #ffcc02;
+  --bg: #0f0e17;
+  --surface: #1a1928;
+  --surface2: #232235;
+  --border: rgba(255,255,255,0.08);
+  --text: #fffffe;
+  --text2: #a7a9be;
+  --correct: #06d6a0;
+  --wrong: #ef476f;
+  --radius: 16px;
+  --font-size: 1rem;
+  --math-c: #4cc9f0;
+  --eng-c: #f72585;
+  --sci-c: #06d6a0;
+  --geo-c: #ffd166;
+  --hist-c: #e76f51;
+  --gen-c: #a78bfa;
+}
+.dyslexic { --font-body: 'Atkinson Hyperlegible', sans-serif !important; letter-spacing: 0.05em; word-spacing: 0.1em; }
+.high-contrast { --bg:#000; --surface:#111; --surface2:#1a1a1a; --text:#fff; --text2:#ddd; --border:rgba(255,255,255,0.3); }
+*{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:var(--font-size);}
+body{
+  font-family: 'Baloo 2', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  overflow-x: hidden;
+}
+/* Stars bg */
+body::before {
+  content:'';position:fixed;inset:0;
+  background: radial-gradient(ellipse at 20% 20%, rgba(255,107,53,0.08) 0%, transparent 60%),
+              radial-gradient(ellipse at 80% 80%, rgba(76,201,240,0.06) 0%, transparent 60%);
+  pointer-events:none;
+}
+
+#app {
+  width: 100%;
+  max-width: 540px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* ═══════════ SCREENS ═══════════ */
+.screen { display:none; flex-direction:column; flex:1; }
+.screen.active { display:flex; }
+
+/* ══════════ SETUP SCREEN ══════════ */
+#setup-screen {
+  padding: 36px 24px;
+  gap: 0;
+  animation: fadeUp 0.5s ease;
+}
+.logo {
+  text-align: center;
+  margin-bottom: 32px;
+}
+.logo h1 {
+  font-size: 3rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--brand), var(--brand2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1.1;
+}
+.logo p { color: var(--text2); font-size: 0.95rem; margin-top: 6px; }
+
+.setup-section { margin-bottom: 24px; }
+.setup-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text2);
+  margin-bottom: 10px;
+  display: block;
+}
+.pill-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.pill {
+  padding: 8px 16px;
+  border-radius: 30px;
+  border: 2px solid var(--border);
+  background: var(--surface);
+  color: var(--text2);
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s;
+  font-family: 'Baloo 2', sans-serif;
+}
+.pill:hover { border-color: var(--brand); color: var(--text); }
+.pill.active { background: var(--brand); border-color: var(--brand); color: #fff; }
+.pill.multi.active { border-color: var(--brand2); background: rgba(255,204,2,0.15); color: var(--brand2); }
+
+/* Difficulty pills with colours */
+.pill[data-diff="easy"].active   { background:#06d6a0; border-color:#06d6a0; color:#000; }
+.pill[data-diff="medium"].active { background:#ffd166; border-color:#ffd166; color:#000; }
+.pill[data-diff="hard"].active   { background:#ef476f; border-color:#ef476f; color:#fff; }
+
+/* Accessibility toggles */
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--surface);
+  border-radius: 12px;
+  margin-bottom: 8px;
+  border: 1.5px solid var(--border);
+}
+.toggle-row span { font-size: 0.9rem; font-weight: 600; }
+.toggle-row small { display:block; color:var(--text2); font-size: 0.75rem; font-weight:400; }
+.toggle {
+  width: 46px; height: 26px;
+  background: var(--surface2);
+  border-radius: 13px;
+  position: relative;
+  cursor: pointer;
+  border: none;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+.toggle::after {
+  content:''; position:absolute;
+  width:20px;height:20px;
+  background:white; border-radius:50%;
+  top:3px; left:3px;
+  transition: left 0.2s;
+}
+.toggle.on { background: var(--brand); }
+.toggle.on::after { left: 23px; }
+
+.font-size-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px;
+  background: var(--surface);
+  border-radius: 12px;
+  border: 1.5px solid var(--border);
+  margin-bottom: 8px;
+}
+.font-size-row span { font-size:0.9rem; font-weight:600; flex:1; }
+.sz-btn {
+  width:34px; height:34px;
+  border-radius:8px; border:none;
+  background: var(--surface2);
+  color: var(--text);
+  font-size: 1.1rem;
+  font-weight:700;
+  cursor:pointer;
+  font-family:'Baloo 2',sans-serif;
+}
+.sz-btn:hover { background: var(--brand); }
+
+.start-btn {
+  margin-top: 8px;
+  width:100%;
+  padding: 18px;
+  border:none;
+  border-radius: var(--radius);
+  background: linear-gradient(135deg, var(--brand), #ff9a3c);
+  color: #fff;
+  font-size: 1.2rem;
+  font-weight: 800;
+  font-family: 'Baloo 2', sans-serif;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+  box-shadow: 0 8px 24px rgba(255,107,53,0.35);
+}
+.start-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(255,107,53,0.45); }
+
+/* ══════════ GAME SCREEN ══════════ */
+#game-screen { flex:1; }
+
+/* HUD */
+.hud {
+  padding: 14px 18px 10px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  position: sticky; top:0; z-index:10;
+}
+.hud-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  gap: 8px;
+}
+.hud-stat {
+  display:flex; flex-direction:column; align-items:center;
+  background: var(--surface2);
+  border-radius:10px; padding:6px 10px;
+  min-width: 60px;
+}
+.hud-stat .val { font-size:1.1rem; font-weight:800; color:var(--text); }
+.hud-stat .lbl { font-size:0.6rem; color:var(--text2); text-transform:uppercase; letter-spacing:1px; }
+.streak-stat .val { color: var(--brand2); }
+.xp-bar-wrap { flex:1; }
+.xp-label { font-size:0.65rem; color:var(--text2); margin-bottom:3px; display:flex; justify-content:space-between; }
+.xp-bar-bg { height:8px; background:var(--surface2); border-radius:4px; overflow:hidden; }
+#xp-fill { height:100%; background:linear-gradient(90deg,var(--brand),var(--brand2)); border-radius:4px; transition:width 0.5s; width:0%; }
+
+/* Timer */
+#timer-wrap {
+  height: 6px; background: var(--surface2); border-radius:3px; overflow:hidden;
+  margin-top: 6px;
+}
+#timer-fill {
+  height:100%;
+  background: linear-gradient(90deg, var(--correct), var(--brand2), var(--wrong));
+  background-size: 300% 100%;
+  background-position: 0%;
+  border-radius:3px;
+  transition: width 0.1s linear, background-position 0.5s;
+  width:100%;
+}
+
+/* Question area */
+.q-area {
+  padding: 24px 20px 10px;
+  flex:1;
+}
+.q-meta {
+  display:flex; align-items:center; gap:10px; margin-bottom:14px;
+}
+.subj-pill {
+  padding:4px 14px; border-radius:20px;
+  font-size:0.7rem; font-weight:800;
+  letter-spacing:1.5px; text-transform:uppercase;
+  color:#000;
+}
+.diff-badge {
+  font-size:0.65rem; color:var(--text2);
+  background:var(--surface2); padding:3px 10px;
+  border-radius:20px; font-weight:700;
+}
+.q-counter { font-size:0.72rem; color:var(--text2); margin-left:auto; }
+
+#question {
+  font-size:1.35rem;
+  font-weight:700;
+  color:var(--text);
+  line-height:1.45;
+  margin-bottom:22px;
+  min-height:60px;
+}
+
+/* Options */
+.opts { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px; }
+.opt-btn {
+  padding:16px 10px;
+  border:2px solid var(--border);
+  border-radius:14px;
+  background:var(--surface);
+  color:var(--text);
+  font-size:0.95rem;
+  font-weight:700;
+  font-family:'Baloo 2',sans-serif;
+  cursor:pointer;
+  transition:all 0.15s;
+  line-height:1.3;
+}
+.opt-btn:hover:not(:disabled) { border-color:var(--brand); background:var(--surface2); transform:translateY(-2px); }
+.opt-btn.correct { background:var(--correct) !important; border-color:var(--correct) !important; color:#000 !important; transform:scale(1.03); }
+.opt-btn.wrong   { background:var(--wrong) !important; border-color:var(--wrong) !important; color:#fff !important; }
+.opt-btn.faded   { opacity:0.3; }
+.opt-btn.hint-hl { border-color:var(--brand2) !important; box-shadow:0 0 0 2px var(--brand2); }
+
+/* Lifelines */
+.lifelines {
+  display:flex; gap:8px; margin-bottom:14px;
+}
+.ll-btn {
+  flex:1; padding:10px 6px;
+  border-radius:12px; border:2px solid var(--border);
+  background:var(--surface); color:var(--text2);
+  font-size:0.8rem; font-weight:700;
+  font-family:'Baloo 2',sans-serif;
+  cursor:pointer; transition:all 0.15s;
+  display:flex; flex-direction:column; align-items:center; gap:2px;
+}
+.ll-btn .ll-icon { font-size:1.2rem; }
+.ll-btn:hover:not(:disabled) { border-color:var(--brand2); color:var(--brand2); }
+.ll-btn:disabled { opacity:0.3; cursor:default; }
+.ll-btn.used { opacity:0.25; text-decoration:line-through; }
+
+/* Explanation */
+#exp-box {
+  display:none;
+  padding:14px;
+  background:rgba(255,204,2,0.08);
+  border:1.5px solid rgba(255,204,2,0.25);
+  border-radius:12px;
+  font-size:0.88rem;
+  color:var(--text2);
+  margin-bottom:14px;
+  animation: fadeUp 0.3s ease;
+}
+#exp-box strong { color:var(--brand2); display:block; margin-bottom:4px; }
+
+/* Read aloud btn */
+#read-btn {
+  display:none;
+  margin-bottom:10px;
+  padding:8px 16px;
+  border-radius:20px;
+  border:1.5px solid var(--border);
+  background:var(--surface2);
+  color:var(--text2);
+  font-size:0.8rem;
+  font-family:'Baloo 2',sans-serif;
+  cursor:pointer;
+  font-weight:700;
+}
+#read-btn:hover { border-color:var(--brand); color:var(--text); }
+
+/* Home button in HUD */
+#home-btn {
+  width: 38px; height: 38px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border);
+  background: var(--surface2);
+  color: var(--text2);
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.18s;
+  flex-shrink: 0;
+}
+#home-btn:hover {
+  border-color: var(--brand);
+  color: var(--brand);
+  background: rgba(255,107,53,0.1);
+  transform: scale(1.08);
+}
+
+/* Confirm modal */
+#confirm-modal {
+  position: fixed; inset: 0; z-index: 300;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(6px);
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.25s;
+}
+#confirm-modal.show { opacity: 1; pointer-events: all; }
+.modal-card {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 22px;
+  padding: 32px 28px 24px;
+  text-align: center;
+  width: 88%; max-width: 340px;
+  transform: translateY(20px) scale(0.95);
+  transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+}
+#confirm-modal.show .modal-card { transform: translateY(0) scale(1); }
+.modal-icon { font-size: 3rem; margin-bottom: 10px; display: block; }
+.modal-card h2 { font-size: 1.4rem; font-weight: 800; margin-bottom: 8px; }
+.modal-card p { font-size: 0.9rem; color: var(--text2); margin-bottom: 24px; line-height: 1.5; }
+.modal-btns { display: flex; gap: 10px; }
+.modal-btn {
+  flex: 1; padding: 14px;
+  border: none; border-radius: 14px;
+  font-size: 0.95rem; font-weight: 800;
+  font-family: 'Baloo 2', sans-serif;
+  cursor: pointer; transition: transform 0.15s;
+}
+.modal-btn:hover { transform: translateY(-2px); }
+.modal-btn.cancel {
+  background: var(--surface2);
+  color: var(--text2);
+  border: 1.5px solid var(--border);
+}
+.modal-btn.confirm-home {
+  background: linear-gradient(135deg, var(--brand), #ff9a3c);
+  color: #fff;
+}
+
+/* Nav button row */
+.nav-btns {
+  display: none;
+  gap: 10px;
+  margin-top: 4px;
+}
+.nav-btns.visible { display: flex; }
+
+#back-btn {
+  padding: 16px 18px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text2);
+  font-size: 1.1rem; font-weight: 800;
+  font-family: 'Baloo 2', sans-serif;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+#back-btn:hover { border-color: var(--brand); color: var(--text); transform: translateY(-2px); }
+#back-btn:disabled { opacity: 0.25; cursor: default; transform: none; }
+
+#next-btn {
+  flex: 1;
+  padding: 16px;
+  border: none; border-radius: var(--radius);
+  background: linear-gradient(135deg, var(--brand), #ff9a3c);
+  color: #fff;
+  font-size: 1.1rem; font-weight: 800;
+  font-family: 'Baloo 2', sans-serif;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+#next-btn:hover { transform: translateY(-2px); }
+
+#save-btn {
+  padding: 16px 14px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text2);
+  font-size: 1.1rem; font-weight: 800;
+  font-family: 'Baloo 2', sans-serif;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+#save-btn:hover { border-color: var(--correct); color: var(--correct); transform: translateY(-2px); }
+#save-btn.saved { border-color: var(--correct); color: var(--correct); background: rgba(6,214,160,0.1); }
+
+/* Toast / floating feedback */
+#toast {
+  position:fixed; bottom:100px; left:50%; transform:translateX(-50%) translateY(20px);
+  background:var(--surface); border:1.5px solid var(--border);
+  padding:10px 22px; border-radius:30px;
+  font-weight:700; font-size:0.9rem;
+  opacity:0; transition:all 0.3s;
+  pointer-events:none; white-space:nowrap; z-index:100;
+}
+#toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+/* Badges popup */
+#badge-popup {
+  position:fixed; top:50%; left:50%; transform:translate(-50%,-50%) scale(0.5);
+  background:var(--surface);
+  border:2px solid var(--brand2);
+  border-radius:20px;
+  padding:30px 40px;
+  text-align:center;
+  z-index:200;
+  opacity:0; transition:all 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  pointer-events:none;
+}
+#badge-popup.show { opacity:1; transform:translate(-50%,-50%) scale(1); pointer-events:all; }
+#badge-popup .badge-icon { font-size:3.5rem; display:block; }
+#badge-popup h3 { font-size:1.2rem; margin:10px 0 4px; color:var(--brand2); }
+#badge-popup p { font-size:0.85rem; color:var(--text2); }
+
+/* ══════════ END SCREEN ══════════ */
+#end-screen {
+  padding:40px 24px;
+  text-align:center;
+  align-items:center;
+  justify-content:center;
+  gap:0;
+  animation: fadeUp 0.5s ease;
+}
+.end-trophy { font-size:5rem; margin-bottom:10px; }
+#end-screen h1 { font-size:2.2rem; font-weight:800; margin-bottom:8px; }
+#end-screen .sub { color:var(--text2); margin-bottom:24px; }
+.end-stats {
+  display:grid; grid-template-columns:repeat(3,1fr); gap:10px;
+  width:100%; margin-bottom:28px;
+}
+.end-stat {
+  background:var(--surface); border-radius:14px; padding:16px 8px;
+  border:1.5px solid var(--border);
+}
+.end-stat .num { font-size:1.8rem; font-weight:800; }
+.end-stat .desc { font-size:0.7rem; color:var(--text2); text-transform:uppercase; letter-spacing:1px; }
+
+/* Badges earned */
+.badges-earned { width:100%; margin-bottom:24px; text-align:left; }
+.badges-earned h3 { font-size:0.75rem; color:var(--text2); text-transform:uppercase; letter-spacing:2px; margin-bottom:10px; }
+.badges-row { display:flex; flex-wrap:wrap; gap:8px; }
+.badge-chip {
+  display:flex; align-items:center; gap:6px;
+  background:var(--surface); border:1.5px solid var(--border);
+  border-radius:20px; padding:6px 14px;
+  font-size:0.8rem; font-weight:700;
+}
+
+/* Wrong answers review */
+.review { width:100%; text-align:left; margin-bottom:24px; }
+.review h3 { font-size:0.75rem; color:var(--text2); text-transform:uppercase; letter-spacing:2px; margin-bottom:10px; }
+.review-item {
+  background:var(--surface); border-radius:12px; padding:12px 14px;
+  margin-bottom:8px; border-left:3px solid var(--wrong);
+}
+.review-item .rq { font-size:0.88rem; font-weight:700; margin-bottom:4px; }
+.review-item .ra { font-size:0.8rem; color:var(--correct); }
+.review-item .rw { font-size:0.8rem; color:var(--wrong); }
+
+.end-btns { display:flex; gap:10px; width:100%; }
+.end-btn {
+  flex:1; padding:15px; border:none; border-radius:var(--radius);
+  font-size:1rem; font-weight:800; font-family:'Baloo 2',sans-serif;
+  cursor:pointer; transition:transform 0.15s;
+}
+.end-btn:hover { transform:translateY(-2px); }
+.end-btn.primary { background:linear-gradient(135deg,var(--brand),#ff9a3c); color:#fff; }
+.end-btn.secondary { background:var(--surface); color:var(--text); border:1.5px solid var(--border); }
+
+/* ══════════ ANIMATIONS ══════════ */
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(20px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+@keyframes pop {
+  0%   { transform:scale(1); }
+  50%  { transform:scale(1.15); }
+  100% { transform:scale(1); }
+}
+@keyframes shake {
+  0%,100% { transform:translateX(0); }
+  25%      { transform:translateX(-6px); }
+  75%      { transform:translateX(6px); }
+}
+.pop   { animation:pop 0.3s ease; }
+.shake { animation:shake 0.3s ease; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width:4px; }
+::-webkit-scrollbar-track { background:var(--surface); }
+::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ════════════ SETUP SCREEN ════════════ -->
+<div id="setup-screen" class="screen active">
+  <div class="logo">
+    <h1>🧠 BrainSpark</h1>
+    <p>A quiz for every age, every level</p>
+  </div>
+
+  <div class="setup-section">
+    <span class="setup-label">📚 Year Group / Level</span>
+    <div class="pill-grid" id="year-pills">
+      <button class="pill active" data-year="1">Year 1</button>
+      <button class="pill" data-year="2">Year 2</button>
+      <button class="pill" data-year="3">Year 3</button>
+      <button class="pill" data-year="4">Year 4</button>
+      <button class="pill" data-year="5">Year 5</button>
+      <button class="pill" data-year="6">Year 6</button>
+      <button class="pill" data-year="gcse">GCSE</button>
+      <button class="pill" data-year="general">General 🌍</button>
+    </div>
+  </div>
+
+  <div class="setup-section">
+    <span class="setup-label">🎯 Difficulty</span>
+    <div class="pill-grid" id="diff-pills">
+      <button class="pill active" data-diff="easy">⭐ Easy</button>
+      <button class="pill" data-diff="medium">⭐⭐ Medium</button>
+      <button class="pill" data-diff="hard">⭐⭐⭐ Hard</button>
+      <button class="pill" data-diff="mixed">🎲 Mix It!</button>
+    </div>
+  </div>
+
+  <div class="setup-section">
+    <span class="setup-label">📖 Subjects (pick any)</span>
+    <div class="pill-grid" id="subj-pills">
+      <button class="pill multi active" data-subj="Maths">📐 Maths</button>
+      <button class="pill multi active" data-subj="English">📝 English</button>
+      <button class="pill multi active" data-subj="Science">🔬 Science</button>
+      <button class="pill multi active" data-subj="Geography">🌍 Geography</button>
+      <button class="pill multi active" data-subj="History">🏛️ History</button>
+      <button class="pill multi active" data-subj="General">🎯 General</button>
+    </div>
+  </div>
+
+  <div class="setup-section">
+    <span class="setup-label">⏱️ Timer</span>
+    <div class="pill-grid" id="timer-pills">
+      <button class="pill active" data-timer="0">No Timer</button>
+      <button class="pill" data-timer="30">30 sec</button>
+      <button class="pill" data-timer="20">20 sec</button>
+      <button class="pill" data-timer="10">10 sec 🔥</button>
+    </div>
+  </div>
+
+  <div class="setup-section">
+    <span class="setup-label">♿ Accessibility</span>
+    <div class="toggle-row">
+      <div><span>Read Aloud</span><small>Questions spoken out loud</small></div>
+      <button class="toggle" id="tgl-read" onclick="toggle(this,'readAloud')"></button>
+    </div>
+    <div class="toggle-row">
+      <div><span>Dyslexia-Friendly Font</span><small>Atkinson Hyperlegible typeface</small></div>
+      <button class="toggle" id="tgl-dys" onclick="toggle(this,'dyslexic')"></button>
+    </div>
+    <div class="toggle-row">
+      <div><span>High Contrast</span><small>Maximum visual contrast</small></div>
+      <button class="toggle" id="tgl-hc" onclick="toggle(this,'highContrast')"></button>
+    </div>
+    <div class="font-size-row">
+      <span>Text Size</span>
+      <button class="sz-btn" onclick="changeFont(-1)">A−</button>
+      <span id="sz-label" style="font-size:0.8rem;color:var(--text2);min-width:28px;text-align:center;">M</span>
+      <button class="sz-btn" onclick="changeFont(1)">A+</button>
+    </div>
+  </div>
+
+  <button class="start-btn" onclick="startGame()">Start Quiz 🚀</button>
+</div>
+
+<!-- ════════════ GAME SCREEN ════════════ -->
+<div id="game-screen" class="screen">
+
+  <div class="hud">
+    <div class="hud-top">
+      <button id="home-btn" onclick="showHomeConfirm()" title="Go to Home">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9.5z"/>
+          <polyline points="9 21 9 13 15 13 15 21"/>
+        </svg>
+      </button>
+      <div class="hud-stat">
+        <span class="val" id="hud-score">0</span>
+        <span class="lbl">Score</span>
+      </div>
+      <div class="hud-stat streak-stat">
+        <span class="val" id="hud-streak">0🔥</span>
+        <span class="lbl">Streak</span>
+      </div>
+      <div class="xp-bar-wrap">
+        <div class="xp-label">
+          <span id="xp-lbl">Level 1</span>
+          <span id="xp-num">0 XP</span>
+        </div>
+        <div class="xp-bar-bg"><div id="xp-fill"></div></div>
+      </div>
+      <div class="hud-stat">
+        <span class="val" id="hud-q">1/20</span>
+        <span class="lbl">Q</span>
+      </div>
+    </div>
+    <div id="timer-wrap" style="display:none"><div id="timer-fill"></div></div>
+  </div>
+
+  <div class="q-area">
+    <div class="q-meta">
+      <div id="subj-pill" class="subj-pill">Maths</div>
+      <div id="diff-pill" class="diff-badge">Easy</div>
+      <div class="q-counter" id="q-counter">Q 1 of 20</div>
+    </div>
+
+    <button id="read-btn" onclick="readAloud()">🔊 Read Question</button>
+    <div id="question">Loading…</div>
+
+    <div class="lifelines">
+      <button class="ll-btn" id="ll-5050" onclick="use5050()">
+        <span class="ll-icon">✂️</span><span>50:50</span>
+      </button>
+      <button class="ll-btn" id="ll-hint" onclick="useHint()">
+        <span class="ll-icon">💡</span><span>Hint</span>
+      </button>
+      <button class="ll-btn" id="ll-skip" onclick="useSkip()">
+        <span class="ll-icon">⏭️</span><span>Skip</span>
+      </button>
+    </div>
+
+    <div class="opts" id="opts"></div>
+    <div id="exp-box"><strong>💡 Did you know?</strong><span id="exp-text"></span></div>
+
+    <div class="nav-btns" id="nav-btns">
+      <button id="back-btn" onclick="goBack()" title="Go back to previous question">← Back</button>
+      <button id="next-btn" onclick="nextQ()">Next ➔</button>
+      <button id="save-btn" onclick="saveQuestion()" title="Bookmark this question">🔖</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ END SCREEN ════════════ -->
+<div id="end-screen" class="screen">
+  <div class="end-trophy" id="end-trophy">🏆</div>
+  <h1 id="end-title">Well Done!</h1>
+  <p class="sub" id="end-sub">You completed the quiz</p>
+  <div class="end-stats">
+    <div class="end-stat"><div class="num" id="es-score">0</div><div class="desc">Score</div></div>
+    <div class="end-stat"><div class="num" id="es-correct">0</div><div class="desc">Correct</div></div>
+    <div class="end-stat"><div class="num" id="es-best-streak">0</div><div class="desc">Best Streak</div></div>
+  </div>
+  <div class="badges-earned" id="badges-section" style="display:none">
+    <h3>🎖️ Badges Earned</h3>
+    <div class="badges-row" id="badges-row"></div>
+  </div>
+  <div class="review" id="review-section" style="display:none">
+    <h3>📋 Review Wrong Answers</h3>
+    <div id="review-list"></div>
+  </div>
+  <div class="review" id="saved-section" style="display:none">
+    <h3>🔖 Saved / Bookmarked Questions</h3>
+    <div id="saved-list"></div>
+  </div>
+  <div class="end-btns">
+    <button class="end-btn secondary" onclick="goSetup()">⚙️ Settings</button>
+    <button class="end-btn primary" onclick="restartGame()">Play Again 🎉</button>
+  </div>
+</div>
+
+</div><!-- #app -->
+
+<!-- Home Confirm Modal -->
+<div id="confirm-modal">
+  <div class="modal-card">
+    <span class="modal-icon">🏠</span>
+    <h2>Go Home?</h2>
+    <p>Your current progress will be lost.<br>Are you sure you want to leave?</p>
+    <div class="modal-btns">
+      <button class="modal-btn cancel" onclick="hideHomeConfirm()">Keep Playing</button>
+      <button class="modal-btn confirm-home" onclick="confirmGoHome()">Go Home</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast & Badge popup (outside app flow) -->
+<div id="toast"></div>
+<div id="badge-popup">
+  <span class="badge-icon" id="bp-icon">🏅</span>
+  <h3 id="bp-name">Badge!</h3>
+  <p id="bp-desc">You earned a badge</p>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  SETTINGS STATE
+// ═══════════════════════════════════════════════════════
+const settings = {
+  year: '1', diff: 'easy', subjects: ['Maths','English','Science','Geography','History','General'],
+  timer: 0, readAloud: false, dyslexic: false, highContrast: false, fontSize: 1
+};
+const fontSizes = [0.85, 0.95, 1.05, 1.15, 1.3];
+const fontLabels = ['XS','S','M','L','XL'];
+let fontIdx = 2;
+
+function toggle(btn, key) {
+  settings[key] = !settings[key];
+  btn.classList.toggle('on', settings[key]);
+  if(key==='dyslexic') document.body.classList.toggle('dyslexic', settings[key]);
+  if(key==='highContrast') document.body.classList.toggle('high-contrast', settings[key]);
+}
+function changeFont(d) {
+  fontIdx = Math.max(0, Math.min(fontSizes.length-1, fontIdx+d));
+  document.documentElement.style.fontSize = fontSizes[fontIdx]+'rem';
+  document.getElementById('sz-label').innerText = fontLabels[fontIdx];
+}
+
+// Pill selectors
+document.getElementById('year-pills').addEventListener('click', e => {
+  if(!e.target.dataset.year) return;
+  document.querySelectorAll('#year-pills .pill').forEach(p=>p.classList.remove('active'));
+  e.target.classList.add('active');
+  settings.year = e.target.dataset.year;
+});
+document.getElementById('diff-pills').addEventListener('click', e => {
+  if(!e.target.dataset.diff) return;
+  document.querySelectorAll('#diff-pills .pill').forEach(p=>p.classList.remove('active'));
+  e.target.classList.add('active');
+  settings.diff = e.target.dataset.diff;
+});
+document.getElementById('timer-pills').addEventListener('click', e => {
+  if(!e.target.dataset.timer) return;
+  document.querySelectorAll('#timer-pills .pill').forEach(p=>p.classList.remove('active'));
+  e.target.classList.add('active');
+  settings.timer = parseInt(e.target.dataset.timer);
+});
+document.getElementById('subj-pills').addEventListener('click', e => {
+  if(!e.target.dataset.subj) return;
+  e.target.classList.toggle('active');
+  settings.subjects = [...document.querySelectorAll('#subj-pills .pill.active')].map(p=>p.dataset.subj);
+  if(settings.subjects.length===0) { e.target.classList.add('active'); settings.subjects=[e.target.dataset.subj]; }
+});
+
+// ═══════════════════════════════════════════════════════
+//  FULL QUESTION BANK  (Year 1–6 + GCSE + General Knowledge)
+// ═══════════════════════════════════════════════════════
+const QB = [
+  // ─────────── MATHS ───────────
+  // Year 1 — easy
+  {s:'Maths',y:['1'],d:'easy',q:'What is 3 + 4?',a:'7',o:['5','6','8'],e:'Count on from 3: 4,5,6,7. The answer is 7.'},
+  {s:'Maths',y:['1'],d:'easy',q:'What is 10 − 3?',a:'7',o:['8','6','5'],e:'Count back 3 from 10: 9,8,7. The answer is 7.'},
+  {s:'Maths',y:['1'],d:'easy',q:'Which number comes after 19?',a:'20',o:['18','21','11'],e:'When you reach 19, the next number is 20.'},
+  {s:'Maths',y:['1'],d:'easy',q:'How many sides does a triangle have?',a:'3',o:['4','2','5'],e:'Tri means three. A triangle has 3 sides.'},
+  {s:'Maths',y:['1'],d:'easy',q:'What is 5 + 5?',a:'10',o:['9','8','11'],e:'5 + 5 = 10. This is called a double!'},
+  {s:'Maths',y:['1'],d:'easy',q:'Which is more: 12 or 21?',a:'21',o:['12','They are equal','Cannot tell'],e:'21 has 2 tens; 12 has only 1 ten. So 21 is larger.'},
+  {s:'Maths',y:['1'],d:'easy',q:'What is half of 8?',a:'4',o:['2','6','3'],e:'Half means sharing equally into 2 groups. 8 ÷ 2 = 4.'},
+  // Year 2 — easy
+  {s:'Maths',y:['2'],d:'easy',q:'What is 25 + 30?',a:'55',o:['50','45','65'],e:'25 + 30: add the tens first (20+30=50), then the ones (5). Answer: 55.'},
+  {s:'Maths',y:['2'],d:'easy',q:'What is 2 × 5?',a:'10',o:['7','12','8'],e:'2 times 5 = 10. Count in 2s five times: 2,4,6,8,10.'},
+  {s:'Maths',y:['2'],d:'easy',q:'How many minutes in one hour?',a:'60',o:['30','100','50'],e:'There are 60 minutes in 1 hour.'},
+  {s:'Maths',y:['2'],d:'easy',q:'What is 50p + 20p?',a:'70p',o:['60p','80p','30p'],e:'50 + 20 = 70. So 70p.'},
+  {s:'Maths',y:['2'],d:'easy',q:'What shape has 4 equal sides?',a:'Square',o:['Rectangle','Triangle','Oval'],e:'A square has 4 sides all the same length.'},
+  // Year 3 — medium
+  {s:'Maths',y:['3'],d:'medium',q:'What is 3 × 8?',a:'24',o:['21','28','18'],e:'3 × 8 = 24. Count in 3s eight times.'},
+  {s:'Maths',y:['3'],d:'medium',q:'What is the value of the hundreds digit in 472?',a:'400',o:['4','40','4000'],e:'The digit 4 is in the hundreds place = 400.'},
+  {s:'Maths',y:['3'],d:'medium',q:'What is ¼ of 20?',a:'5',o:['10','4','8'],e:'Divide by 4: 20 ÷ 4 = 5.'},
+  {s:'Maths',y:['3'],d:'medium',q:'What is 347 + 256?',a:'603',o:['593','613','503'],e:'Column addition: 7+6=13, carry 1. 4+5+1=10, carry 1. 3+2+1=6. Answer: 603.'},
+  {s:'Maths',y:['3'],d:'medium',q:'Round 342 to the nearest 10.',a:'340',o:['300','350','400'],e:'The ones digit is 2 (less than 5), round down to 340.'},
+  {s:'Maths',y:['3'],d:'medium',q:'What is the perimeter of a square with sides 5 cm?',a:'20 cm',o:['10 cm','25 cm','15 cm'],e:'Perimeter = 4 × 5 = 20 cm.'},
+  // Year 4 — medium
+  {s:'Maths',y:['4'],d:'medium',q:'What is 7 × 9?',a:'63',o:['54','72','56'],e:'7 × 9 = 63. Try 7×10=70 then subtract 7.'},
+  {s:'Maths',y:['4'],d:'medium',q:'What is 1000 − 364?',a:'636',o:['646','736','664'],e:'Column subtraction: 1000 − 364 = 636.'},
+  {s:'Maths',y:['4'],d:'medium',q:'What is 12 × 12?',a:'144',o:['124','132','148'],e:'12 × 12 = 144. Know your 12 times table!'},
+  {s:'Maths',y:['4'],d:'medium',q:'What is 3/4 expressed as a decimal?',a:'0.75',o:['0.3','0.34','0.25'],e:'3 ÷ 4 = 0.75. Quarter = 0.25, so three-quarters = 0.75.'},
+  {s:'Maths',y:['4'],d:'medium',q:'What are the Roman numerals for 14?',a:'XIV',o:['IVX','XVI','XIY'],e:'XIV = 10 (X) + 4 (IV). IV means one before five.'},
+  // Year 5 — hard
+  {s:'Maths',y:['5'],d:'hard',q:'What is 2³ (2 to the power of 3)?',a:'8',o:['6','9','16'],e:'2³ = 2 × 2 × 2 = 4 × 2 = 8.'},
+  {s:'Maths',y:['5'],d:'hard',q:'What is 25% of 180?',a:'45',o:['35','55','40'],e:'25% = 1/4. So 180 ÷ 4 = 45.'},
+  {s:'Maths',y:['5'],d:'hard',q:'What is the area of a triangle with base 10 cm and height 6 cm?',a:'30 cm²',o:['60 cm²','16 cm²','30 cm'],e:'Area of triangle = ½ × base × height = ½ × 10 × 6 = 30 cm².'},
+  {s:'Maths',y:['5'],d:'hard',q:'What is the LCM of 4 and 6?',a:'12',o:['24','8','6'],e:'LCM (Lowest Common Multiple): multiples of 4: 4,8,12… multiples of 6: 6,12… LCM = 12.'},
+  {s:'Maths',y:['5'],d:'hard',q:'What is −5 + 8?',a:'3',o:['−3','13','−13'],e:'Start at −5 on a number line, count up 8 to reach +3.'},
+  // Year 6 — hard
+  {s:'Maths',y:['6'],d:'hard',q:'What is the mean of 3, 7, 5, 9, 6?',a:'6',o:['5','7','30'],e:'Mean = total ÷ count. (3+7+5+9+6)=30. 30÷5=6.'},
+  {s:'Maths',y:['6'],d:'hard',q:'A bag has 5 red and 3 blue marbles. What is the probability of picking red?',a:'5/8',o:['5/3','3/8','1/2'],e:'Probability = favourable outcomes / total outcomes. 5 red out of 8 total = 5/8.'},
+  {s:'Maths',y:['6'],d:'hard',q:'What is 40% of 250?',a:'100',o:['90','110','40'],e:'40% = 40/100 × 250 = 4 × 25 = 100.'},
+  {s:'Maths',y:['6'],d:'hard',q:'Solve: 3x + 5 = 20. What is x?',a:'5',o:['6','4','7'],e:'3x = 20 − 5 = 15. x = 15 ÷ 3 = 5.'},
+  // GCSE — hard
+  {s:'Maths',y:['gcse'],d:'hard',q:'What is the gradient of the line y = 3x − 2?',a:'3',o:['−2','2','−3'],e:'In y = mx + c, m is the gradient. So gradient = 3.'},
+  {s:'Maths',y:['gcse'],d:'hard',q:'What is sin(30°)?',a:'0.5',o:['√3/2','√2/2','1'],e:'sin(30°) = ½ = 0.5. A key value to memorise.'},
+  {s:'Maths',y:['gcse'],d:'hard',q:'What is the quadratic formula?',a:'x = (−b ± √(b²−4ac)) / 2a',o:['x = b / 2a','x = −b / 2a','x = (b² − 4ac) / a'],e:'The quadratic formula solves ax² + bx + c = 0.'},
+  {s:'Maths',y:['gcse'],d:'hard',q:'A circle has radius 5 cm. What is its area? (π ≈ 3.14)',a:'78.5 cm²',o:['31.4 cm²','25 cm²','15.7 cm²'],e:'Area = πr² = 3.14 × 5² = 3.14 × 25 = 78.5 cm².'},
+
+  // ─────────── ENGLISH ───────────
+  {s:'English',y:['1','2'],d:'easy',q:'Which word rhymes with "cat"?',a:'hat',o:['dog','cup','run'],e:'"Cat" and "hat" share the -at sound, making them a rhyming pair.'},
+  {s:'English',y:['1','2'],d:'easy',q:'Which of these is a vowel?',a:'e',o:['b','t','g'],e:'The vowels are: a, e, i, o, u. All other letters are consonants.'},
+  {s:'English',y:['2'],d:'easy',q:'Which word has the suffix "-ful"?',a:'careful',o:['running','helpless','faster'],e:'"Careful" uses the suffix -ful meaning full of. Be CARE-ful!'},
+  {s:'English',y:['3','4'],d:'medium',q:'Which is the correct spelling?',a:'believe',o:['beleive','beleeve','beleve'],e:'Remember: don\'t be-LIE-ve a lie! The "ie" comes after the "l".'},
+  {s:'English',y:['3','4'],d:'medium',q:'What type of word is "quickly"?',a:'Adverb',o:['Adjective','Noun','Verb'],e:'Adverbs tell us HOW, WHEN or WHERE. "Quickly" tells us how.'},
+  {s:'English',y:['3','4'],d:'medium',q:'Which punctuation ends a question?',a:'?',o:['.','!',','],e:'Questions always end with a question mark (?).'},
+  {s:'English',y:['3','4'],d:'medium',q:'Which word is a conjunction?',a:'because',o:['quickly','beautiful','ran'],e:'Conjunctions join clauses. "Because" gives a reason.'},
+  {s:'English',y:['3','4'],d:'medium',q:'Correct spelling?',a:'February',o:['Febuary','Feburary','Februry'],e:'"February" has a hidden "r": Feb-RU-ary. Don\'t skip it!'},
+  {s:'English',y:['4','5'],d:'medium',q:'What is an oxymoron?',a:'Two contradictory words together',o:['A word that imitates sound','A very long word','An extreme exaggeration'],e:'Examples: "deafening silence", "living dead". Contradictory words used together for effect.'},
+  {s:'English',y:['5','6'],d:'hard',q:'What is a subordinate clause?',a:'A clause that depends on a main clause',o:['An independent sentence','A type of noun phrase','A list of adjectives'],e:'E.g. "Although it was raining, we went out." "Although it was raining" cannot stand alone — it is subordinate.'},
+  {s:'English',y:['5','6'],d:'hard',q:'Which sentence uses a semi-colon correctly?',a:'I love football; my brother prefers rugby.',o:['I love; football my brother prefers rugby.','I love football my; brother prefers rugby.','I love football, my; brother prefers rugby.'],e:'A semi-colon joins two closely related independent clauses.'},
+  {s:'English',y:['5','6'],d:'hard',q:'What does the prefix "micro-" mean?',a:'Very small',o:['Very large','Half','Against'],e:'"Micro" = very small. Microscope, microchip, microwave.'},
+  {s:'English',y:['gcse'],d:'hard',q:'What literary technique is "The wind whispered through the trees"?',a:'Personification',o:['Simile','Metaphor','Alliteration'],e:'Personification gives human qualities to non-human things. Wind cannot truly "whisper".'},
+  {s:'English',y:['gcse'],d:'hard',q:'What is iambic pentameter?',a:'10 syllables per line in a da-DUM pattern',o:['Rhyming couplets','A poem with 14 lines','A repeated chorus'],e:'Iambic pentameter = 5 iambs (da-DUM) per line. Used by Shakespeare.'},
+  {s:'English',y:['gcse'],d:'hard',q:'In "Animal Farm", the pigs represent...',a:'The Soviet Communist leadership',o:['The working class','Religious leaders','Capitalist businessmen'],e:'Orwell\'s pigs (Napoleon, Snowball, Squealer) represent Stalin, Trotsky, and Soviet propaganda.'},
+
+  // ─────────── SCIENCE ───────────
+  {s:'Science',y:['1','2'],d:'easy',q:'What do plants need to grow?',a:'Sunlight, water and soil',o:['Only water','Only sunlight','Just soil'],e:'Plants need sunlight for energy, water for growth, and soil for nutrients.'},
+  {s:'Science',y:['1','2'],d:'easy',q:'Which animal lays eggs?',a:'Chicken',o:['Dog','Cat','Rabbit'],e:'Chickens are birds and all birds lay eggs.'},
+  {s:'Science',y:['2','3'],d:'easy',q:'What are the three states of matter?',a:'Solid, liquid and gas',o:['Hot, cold and warm','Hard, soft and liquid','Metal, wood and water'],e:'Everything is made of matter in one of three states: solid (fixed shape), liquid (flows), gas (fills space).'},
+  {s:'Science',y:['3','4'],d:'medium',q:'What process do plants use to make food from sunlight?',a:'Photosynthesis',o:['Digestion','Respiration','Germination'],e:'Photosynthesis: plants use sunlight + water + CO₂ to make glucose and oxygen.'},
+  {s:'Science',y:['3','4'],d:'medium',q:'Which rock forms from cooled lava?',a:'Igneous',o:['Sedimentary','Metamorphic','Chalk'],e:'Igneous = "fire rock". Formed when magma or lava cools and solidifies.'},
+  {s:'Science',y:['3','4'],d:'medium',q:'What force pulls objects toward Earth?',a:'Gravity',o:['Magnetism','Friction','Tension'],e:'Gravity is a non-contact force that attracts all objects with mass.'},
+  {s:'Science',y:['4','5'],d:'medium',q:'What is the chemical symbol for water?',a:'H₂O',o:['HO','H₂O₂','OH'],e:'Water = H₂O: 2 hydrogen atoms bonded to 1 oxygen atom.'},
+  {s:'Science',y:['4','5'],d:'medium',q:'What travels faster — light or sound?',a:'Light',o:['Sound','They travel at the same speed','It depends on the weather'],e:'Light travels at 300,000 km/s. Sound travels at ~343 m/s. Light is nearly a million times faster!'},
+  {s:'Science',y:['5','6'],d:'hard',q:'What is the function of the mitochondria?',a:'Produce energy (ATP) for the cell',o:['Control the cell','Make proteins','Store DNA'],e:'Mitochondria are the "powerhouses of the cell" — they produce ATP through respiration.'},
+  {s:'Science',y:['5','6'],d:'hard',q:'What is the equation for photosynthesis?',a:'CO₂ + H₂O → C₆H₁₂O₆ + O₂',o:['O₂ + H₂O → CO₂','C₆H₁₂O₆ → CO₂ + H₂O','H₂O + O₂ → CO₂'],e:'Carbon dioxide + water → glucose + oxygen. (Powered by sunlight, catalysed by chlorophyll.)'},
+  {s:'Science',y:['gcse'],d:'hard',q:'What is Newton\'s Second Law?',a:'Force = mass × acceleration (F=ma)',o:['Every action has an equal and opposite reaction','Objects stay at rest unless acted upon','Mass is constant regardless of gravity'],e:'F = ma. If you double the mass, you need double the force for the same acceleration.'},
+  {s:'Science',y:['gcse'],d:'hard',q:'What is the atomic number of Carbon?',a:'6',o:['12','8','4'],e:'Carbon (C) has atomic number 6, meaning it has 6 protons.'},
+  {s:'Science',y:['gcse'],d:'hard',q:'What type of bond involves the sharing of electrons?',a:'Covalent bond',o:['Ionic bond','Metallic bond','Hydrogen bond'],e:'Covalent bonds form when atoms share electron pairs. Common in non-metal molecules like H₂O.'},
+
+  // ─────────── GEOGRAPHY ───────────
+  {s:'Geography',y:['1','2'],d:'easy',q:'What is the name of the country we live in?',a:'United Kingdom',o:['France','Germany','Spain'],e:'The United Kingdom (UK) is made up of England, Scotland, Wales and Northern Ireland.'},
+  {s:'Geography',y:['2','3'],d:'easy',q:'What is the capital city of England?',a:'London',o:['Manchester','Birmingham','Bristol'],e:'London is both the capital and largest city of England and the UK.'},
+  {s:'Geography',y:['3','4'],d:'medium',q:'What ocean lies west of the UK?',a:'Atlantic Ocean',o:['Pacific Ocean','Indian Ocean','Arctic Ocean'],e:'The Atlantic separates Europe and the Americas.'},
+  {s:'Geography',y:['3','4'],d:'medium',q:'What is the equator?',a:'An imaginary line around the middle of the Earth',o:['The edge of the Earth','A line from north to south pole','A type of map'],e:'The equator sits at 0° latitude and divides Earth into the Northern and Southern Hemispheres.'},
+  {s:'Geography',y:['4','5'],d:'medium',q:'Which is the world\'s largest continent?',a:'Asia',o:['Africa','North America','Europe'],e:'Asia covers about 44 million km² — over 30% of Earth\'s land area.'},
+  {s:'Geography',y:['4','5'],d:'medium',q:'What is the capital of Australia?',a:'Canberra',o:['Sydney','Melbourne','Brisbane'],e:'Many people guess Sydney, but Canberra has been the capital since 1913.'},
+  {s:'Geography',y:['5','6'],d:'hard',q:'What causes earthquakes?',a:'Movement of tectonic plates',o:['Volcanic eruptions only','Ocean currents','Weather patterns'],e:'Tectonic plates constantly move. When they collide or slide, energy is released as seismic waves — earthquakes!'},
+  {s:'Geography',y:['5','6'],d:'hard',q:'What is the longest river in the world?',a:'The Nile',o:['The Amazon','The Mississippi','The Yangtze'],e:'The Nile in Africa is approximately 6,650 km long.'},
+  {s:'Geography',y:['gcse'],d:'hard',q:'What is urbanisation?',a:'The increase in the proportion of people living in cities',o:['Building more cities','The growth of rural areas','Reducing pollution in cities'],e:'Urbanisation = more people moving to cities. It is driven by migration for jobs and services.'},
+  {s:'Geography',y:['gcse'],d:'hard',q:'What does GDP stand for?',a:'Gross Domestic Product',o:['General Domestic Population','Global Development Plan','Gross Domestic Population'],e:'GDP measures the total value of goods and services produced in a country in a year.'},
+
+  // ─────────── HISTORY ───────────
+  {s:'History',y:['1','2'],d:'easy',q:'What did Florence Nightingale do?',a:'She was a famous nurse',o:['She was a queen','She was a scientist','She was a teacher'],e:'Florence Nightingale (1820–1910) reformed nursing and improved hospital conditions.'},
+  {s:'History',y:['2','3'],d:'easy',q:'What did Stone Age people use to make tools?',a:'Flint (stone)',o:['Iron','Bronze','Plastic'],e:'In the Stone Age, people chipped flint rocks into sharp tools and weapons.'},
+  {s:'History',y:['3','4'],d:'medium',q:'Which ancient civilisation built the pyramids?',a:'The Egyptians',o:['The Romans','The Greeks','The Vikings'],e:'The Ancient Egyptians built the pyramids as tombs for pharaohs, around 2500 BC.'},
+  {s:'History',y:['3','4'],d:'medium',q:'Who was Boudicca?',a:'A British queen who fought against the Romans',o:['A Roman empress','An Egyptian pharaoh','A Viking warrior'],e:'Boudicca, queen of the Iceni, led a famous revolt against Roman rule around AD 60.'},
+  {s:'History',y:['4','5'],d:'medium',q:'In which year did World War II begin?',a:'1939',o:['1914','1945','1930'],e:'WWII began on 1 September 1939 when Germany invaded Poland.'},
+  {s:'History',y:['4','5'],d:'medium',q:'Who was the first man to walk on the Moon?',a:'Neil Armstrong',o:['Buzz Aldrin','Yuri Gagarin','John Glenn'],e:'Neil Armstrong stepped onto the Moon on 20 July 1969 during Apollo 11.'},
+  {s:'History',y:['5','6'],d:'hard',q:'What was the Magna Carta?',a:'A charter limiting the power of the king, signed in 1215',o:['A map of Medieval England','A trade agreement with France','The first English constitution'],e:'Signed by King John in 1215, the Magna Carta established that even kings must obey the law.'},
+  {s:'History',y:['5','6'],d:'hard',q:'What sparked World War I?',a:'Assassination of Archduke Franz Ferdinand',o:['Germany invaded Poland','The sinking of the Titanic','A trade war between Britain and Germany'],e:'The assassination of Austro-Hungarian heir Franz Ferdinand in Sarajevo in June 1914 triggered the war.'},
+  {s:'History',y:['gcse'],d:'hard',q:'What was the policy of "Appeasement" in the 1930s?',a:'Giving in to Hitler\'s demands to avoid war',o:['A military build-up against Germany','Economic sanctions on Germany','A peace treaty signed with the USSR'],e:'Britain and France gave Hitler concessions (like the Sudetenland) hoping to prevent war — but it failed.'},
+  {s:'History',y:['gcse'],d:'hard',q:'What was the main cause of the Cold War?',a:'Ideological conflict between capitalism (USA) and communism (USSR)',o:['A trade dispute over oil','Nuclear weapons testing by Japan','Conflict in Africa'],e:'After WWII, the USA and USSR became superpowers with opposing ideologies — democracy/capitalism vs communism.'},
+
+  // ─────────── GENERAL KNOWLEDGE ───────────
+  {s:'General',y:['1','2','3','4','5','6','gcse','general'],d:'easy',q:'How many days are in a week?',a:'7',o:['5','6','8'],e:'There are 7 days in a week: Mon, Tue, Wed, Thu, Fri, Sat, Sun.'},
+  {s:'General',y:['1','2','3','4','5','6','gcse','general'],d:'easy',q:'What colour is a ripe banana?',a:'Yellow',o:['Red','Green','Blue'],e:'Ripe bananas are yellow. Unripe bananas are green!'},
+  {s:'General',y:['2','3','4','5','6','gcse','general'],d:'easy',q:'Which planet is closest to the Sun?',a:'Mercury',o:['Venus','Earth','Mars'],e:'Mercury is the smallest planet and the closest to the Sun.'},
+  {s:'General',y:['2','3','4','5','6','gcse','general'],d:'easy',q:'How many continents are there on Earth?',a:'7',o:['5','6','8'],e:'The 7 continents are: Africa, Antarctica, Asia, Australia, Europe, North America, South America.'},
+  {s:'General',y:['3','4','5','6','gcse','general'],d:'medium',q:'What is the largest animal on Earth?',a:'Blue whale',o:['Elephant','Giraffe','Great white shark'],e:'The blue whale is the largest animal ever known — up to 30 metres long and 170 tonnes!'},
+  {s:'General',y:['3','4','5','6','gcse','general'],d:'medium',q:'What gas do humans breathe out?',a:'Carbon dioxide',o:['Oxygen','Nitrogen','Hydrogen'],e:'We breathe IN oxygen and breathe OUT carbon dioxide (CO₂), a waste product of respiration.'},
+  {s:'General',y:['4','5','6','gcse','general'],d:'medium',q:'Who painted the Mona Lisa?',a:'Leonardo da Vinci',o:['Michelangelo','Pablo Picasso','Raphael'],e:'Leonardo da Vinci painted the Mona Lisa around 1503–1519. It now hangs in the Louvre, Paris.'},
+  {s:'General',y:['4','5','6','gcse','general'],d:'medium',q:'What is the powerhouse of the cell?',a:'Mitochondria',o:['Nucleus','Ribosome','Cell membrane'],e:'The mitochondria produce ATP energy for the cell — earning the nickname "powerhouse of the cell".'},
+  {s:'General',y:['5','6','gcse','general'],d:'hard',q:'What does DNA stand for?',a:'Deoxyribonucleic acid',o:['Dynamic nucleic agent','Digital neuron array','Dual nitrogen acid'],e:'DNA (Deoxyribonucleic acid) carries the genetic instructions for life.'},
+  {s:'General',y:['5','6','gcse','general'],d:'hard',q:'What is the speed of light (approx)?',a:'300,000 km per second',o:['3,000 km per second','30,000 km per second','3,000,000 km per second'],e:'Light travels at approximately 299,792 km/s — almost a billion km/h!'},
+  {s:'General',y:['gcse','general'],d:'hard',q:'What is the Pythagorean theorem?',a:'a² + b² = c²',o:['a + b = c','a² − b² = c²','a × b = c²'],e:'In a right-angled triangle, the square of the hypotenuse = sum of squares of the other two sides.'},
+  {s:'General',y:['gcse','general'],d:'hard',q:'Which element has the symbol "Au"?',a:'Gold',o:['Silver','Aluminium','Argon'],e:'"Au" comes from the Latin word "Aurum" meaning gold.'},
+  {s:'General',y:['gcse','general'],d:'hard',q:'What is the capital of Japan?',a:'Tokyo',o:['Osaka','Kyoto','Hiroshima'],e:'Tokyo has been Japan\'s capital since 1869, and is one of the world\'s most populous cities.'},
+  {s:'General',y:['gcse','general'],d:'hard',q:'In what year did the Berlin Wall fall?',a:'1989',o:['1961','1975','1991'],e:'The Berlin Wall fell on 9 November 1989, marking the end of the Cold War era.'},
+];
+
+// ═══════════════════════════════════════════════════════
+//  BADGES SYSTEM
+// ═══════════════════════════════════════════════════════
+const BADGES = [
+  { id:'first_correct', icon:'🎯', name:'Bullseye!', desc:'Got your first question right', condition: g => g.totalCorrect >= 1 },
+  { id:'streak_3',      icon:'🔥', name:'On Fire!', desc:'3 correct in a row', condition: g => g.bestStreak >= 3 },
+  { id:'streak_5',      icon:'⚡', name:'Lightning!', desc:'5 correct in a row', condition: g => g.bestStreak >= 5 },
+  { id:'perfect',       icon:'💎', name:'Diamond Round!', desc:'Got every question right', condition: g => g.totalCorrect === g.totalQ },
+  { id:'half_way',      icon:'🏃', name:'Halfway Hero!', desc:'Reached question 10', condition: g => g.totalQ >= 10 },
+  { id:'no_lifelines',  icon:'🧠', name:'Brain Power!', desc:'Finished without any lifelines', condition: g => g.lifelinesUsed === 0 && g.totalQ >= 5 },
+  { id:'quick_fire',    icon:'⏱️', name:'Speed Demon!', desc:'Answered 5 questions with timer on', condition: g => g.timedCorrect >= 5 },
+  { id:'all_subjects',  icon:'🌈', name:'Renaissance!', desc:'Answered questions in 4+ subjects', condition: g => g.subjectsAnswered.size >= 4 },
+];
+
+// ═══════════════════════════════════════════════════════
+//  GAME STATE
+// ═══════════════════════════════════════════════════════
+let G = {};
+
+function initGame() {
+  G = {
+    pool: [], usedIdx: [], qNum: 0, totalQ: 20,
+    score: 0, streak: 0, bestStreak: 0,
+    xp: 0, level: 1,
+    totalCorrect: 0, wrongAnswers: [],
+    lifelinesUsed: 0, timedCorrect: 0,
+    subjectsAnswered: new Set(),
+    ll_5050: false, ll_hint: false, ll_skip: false,
+    timerInterval: null, timeLeft: 0,
+    currentData: null, answered: false,
+    badgesEarned: [],
+    allBadges: new Set(JSON.parse(localStorage.getItem('bs_badges')||'[]')),
+    history: [],        // stores snapshots for back navigation
+    savedQuestions: JSON.parse(localStorage.getItem('bs_saved')||'[]'),
+  };
+}
+
+function buildPool() {
+  const yr = settings.year;
+  const subjs = settings.subjects;
+  const diff = settings.diff;
+  return QB.filter(q => {
+    const yearOk = q.y.includes(yr) || yr === 'general';
+    const subjOk = subjs.includes(q.s);
+    const diffOk = diff === 'mixed' || q.d === diff ||
+                   (diff === 'easy' && q.d === 'easy') ||
+                   (diff === 'medium' && ['easy','medium'].includes(q.d)) ||
+                   (diff === 'hard');
+    return yearOk && subjOk && diffOk;
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+//  START / NAVIGATION
+// ═══════════════════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function startGame() {
+  initGame();
+  G.pool = buildPool();
+  if(G.pool.length < 5) { alert('Not enough questions for these settings. Please select more subjects or change year/difficulty.'); return; }
+  G.totalQ = Math.min(20, G.pool.length);
+  document.getElementById('hud-q').innerText = `1/${G.totalQ}`;
+  if(settings.timer > 0) document.getElementById('timer-wrap').style.display = 'block';
+  else document.getElementById('timer-wrap').style.display = 'none';
+  if(settings.readAloud) document.getElementById('read-btn').style.display = 'inline-block';
+  else document.getElementById('read-btn').style.display = 'none';
+  showScreen('game-screen');
+  G.qNum = 1;
+  loadQuestion();
+}
+
+function goSetup() { clearInterval(G.timerInterval); showScreen('setup-screen'); }
+
+function showHomeConfirm() {
+  document.getElementById('confirm-modal').classList.add('show');
+}
+function hideHomeConfirm() {
+  document.getElementById('confirm-modal').classList.remove('show');
+}
+function confirmGoHome() {
+  hideHomeConfirm();
+  goSetup();
+}
+
+function restartGame() {
+  clearInterval(G.timerInterval);
+  startGame();
+}
+
+// ═══════════════════════════════════════════════════════
+//  QUESTION LOGIC
+// ═══════════════════════════════════════════════════════
+function pickQ() {
+  if(G.usedIdx.length >= G.pool.length) G.usedIdx = [];
+  let idx;
+  let attempts = 0;
+  do { idx = Math.floor(Math.random()*G.pool.length); attempts++; }
+  while(G.usedIdx.includes(idx) && attempts < 100);
+  G.usedIdx.push(idx);
+  return G.pool[idx];
+}
+
+function shuffle(a) { return [...a].sort(()=>Math.random()-0.5); }
+
+function loadQuestion() {
+  G.answered = false;
+  clearInterval(G.timerInterval);
+
+  const data = pickQ();
+  G.currentData = data;
+
+  // Subject colour
+  const colours = { Maths:['var(--math-c)','#000'], English:['var(--eng-c)','#fff'], Science:['var(--sci-c)','#000'], Geography:['var(--geo-c)','#000'], History:['var(--hist-c)','#fff'], General:['var(--gen-c)','#fff'] };
+  const [bg, fg] = colours[data.s] || ['var(--brand)','#fff'];
+  const pill = document.getElementById('subj-pill');
+  pill.innerText = data.s;
+  pill.style.background = bg;
+  pill.style.color = fg;
+
+  const diffLabels = { easy:'⭐ Easy', medium:'⭐⭐ Medium', hard:'⭐⭐⭐ Hard' };
+  document.getElementById('diff-pill').innerText = diffLabels[data.d] || data.d;
+  document.getElementById('q-counter').innerText = `Q ${G.qNum} of ${G.totalQ}`;
+  document.getElementById('hud-q').innerText = `${G.qNum}/${G.totalQ}`;
+  document.getElementById('question').innerText = data.q;
+  document.getElementById('exp-box').style.display = 'none';
+  document.getElementById('exp-text').innerText = data.e;
+  document.getElementById('nav-btns').classList.remove('visible');
+
+  // Back button: disable on first question
+  document.getElementById('back-btn').disabled = G.history.length === 0;
+
+  // Reset lifelines for this question
+  document.getElementById('ll-5050').disabled = G.ll_5050;
+  document.getElementById('ll-hint').disabled = G.ll_hint;
+  document.getElementById('ll-skip').disabled = G.ll_skip;
+  document.getElementById('ll-5050').classList.toggle('used', G.ll_5050);
+  document.getElementById('ll-hint').classList.toggle('used', G.ll_hint);
+  document.getElementById('ll-skip').classList.toggle('used', G.ll_skip);
+
+  // Build options
+  let pool = shuffle([data.a, ...data.o.slice(0,3)].filter((v,i,a)=>a.indexOf(v)===i)).slice(0,4);
+  if(!pool.includes(data.a)) { pool[0] = data.a; pool = shuffle(pool); }
+
+  const opts = document.getElementById('opts');
+  opts.innerHTML = '';
+  pool.forEach(text => {
+    const b = document.createElement('button');
+    b.className = 'opt-btn';
+    b.innerText = text;
+    b.dataset.val = text;
+    b.onclick = () => checkAnswer(text, b);
+    opts.appendChild(b);
+  });
+
+  // Timer
+  if(settings.timer > 0) {
+    G.timeLeft = settings.timer;
+    const fill = document.getElementById('timer-fill');
+    fill.style.width = '100%';
+    fill.style.backgroundPosition = '0%';
+    G.timerInterval = setInterval(() => {
+      G.timeLeft--;
+      const pct = (G.timeLeft / settings.timer) * 100;
+      fill.style.width = pct + '%';
+      fill.style.backgroundPosition = ((1 - G.timeLeft/settings.timer)*100) + '% 0%';
+      if(G.timeLeft <= 0) {
+        clearInterval(G.timerInterval);
+        if(!G.answered) timeOut();
+      }
+    }, 1000);
+  }
+}
+
+function checkAnswer(chosen, btn) {
+  if(G.answered) return;
+  G.answered = true;
+  clearInterval(G.timerInterval);
+
+  const data = G.currentData;
+  const allBtns = document.querySelectorAll('.opt-btn');
+  allBtns.forEach(b => b.disabled = true);
+
+  G.subjectsAnswered.add(data.s);
+
+  if(chosen === data.a) {
+    btn.classList.add('correct');
+    btn.classList.add('pop');
+    G.streak++;
+    if(G.streak > G.bestStreak) G.bestStreak = G.streak;
+    const pts = data.d === 'easy' ? 10 : data.d === 'medium' ? 20 : 30;
+    const bonus = G.streak >= 3 ? Math.floor(pts * 0.5) : 0;
+    G.score += pts + bonus;
+    G.xp += pts + bonus;
+    G.totalCorrect++;
+    if(settings.timer > 0) G.timedCorrect++;
+    document.getElementById('hud-score').innerText = G.score;
+    document.getElementById('hud-streak').innerText = G.streak + '🔥';
+    updateXP();
+    if(bonus > 0) showToast(`+${pts} pts 🔥 Streak bonus +${bonus}!`, '#ffd166');
+    else showToast(`+${pts} pts ✓`, 'var(--correct)');
+    checkBadges();
+  } else {
+    btn.classList.add('wrong');
+    btn.classList.add('shake');
+    allBtns.forEach(b => { if(b.dataset.val === data.a) b.classList.add('correct'); });
+    document.getElementById('exp-box').style.display = 'block';
+    G.streak = 0;
+    document.getElementById('hud-streak').innerText = '0🔥';
+    G.wrongAnswers.push({ q: data.q, correct: data.a, chosen });
+    showToast('Not quite! See the explanation below.', 'var(--wrong)');
+  }
+
+  // Save snapshot to history so Back works
+  G.history.push({
+    data: G.currentData,
+    score: G.score, streak: G.streak, bestStreak: G.bestStreak,
+    xp: G.xp, totalCorrect: G.totalCorrect,
+    chosen, wasCorrect: chosen === G.currentData.a
+  });
+
+  // Update save btn state
+  const alreadySaved = G.savedQuestions.some(q => q.q === G.currentData.q);
+  const sb = document.getElementById('save-btn');
+  sb.classList.toggle('saved', alreadySaved);
+  sb.title = alreadySaved ? 'Already bookmarked' : 'Bookmark this question';
+
+  document.getElementById('nav-btns').classList.add('visible');
+}
+
+function timeOut() {
+  G.answered = true;
+  const data = G.currentData;
+  const allBtns = document.querySelectorAll('.opt-btn');
+  allBtns.forEach(b => {
+    b.disabled = true;
+    if(b.dataset.val === data.a) b.classList.add('correct');
+  });
+  G.streak = 0;
+  document.getElementById('hud-streak').innerText = '0🔥';
+  document.getElementById('exp-box').style.display = 'block';
+  G.wrongAnswers.push({ q: data.q, correct: data.a, chosen: '⏱️ Time out' });
+
+  G.history.push({ data, score: G.score, streak: 0, bestStreak: G.bestStreak, xp: G.xp, totalCorrect: G.totalCorrect, chosen: '⏱️', wasCorrect: false });
+
+  document.getElementById('nav-btns').classList.add('visible');
+  showToast('⏱️ Time\'s up!', 'var(--wrong)');
+}
+
+function nextQ() {
+  if(G.qNum >= G.totalQ) { endGame(); return; }
+  G.qNum++;
+  loadQuestion();
+}
+
+// ─── BACK BUTTON ───
+function goBack() {
+  if(G.history.length === 0) return;
+  clearInterval(G.timerInterval);
+
+  // Pop the current from history, then restore previous
+  const prev = G.history.pop();
+
+  // Undo score/stats if this was answered correctly
+  if(prev.wasCorrect) {
+    const pts = prev.data.d === 'easy' ? 10 : prev.data.d === 'medium' ? 20 : 30;
+    const bonus = prev.streak >= 3 ? Math.floor(pts * 0.5) : 0;
+    G.score = Math.max(0, G.score - pts - bonus);
+    G.xp = Math.max(0, G.xp - pts - bonus);
+    G.totalCorrect = Math.max(0, G.totalCorrect - 1);
+    document.getElementById('hud-score').innerText = G.score;
+    updateXP();
+  } else {
+    // Remove from wrong answers list
+    const wi = G.wrongAnswers.findIndex(w => w.q === prev.data.q);
+    if(wi > -1) G.wrongAnswers.splice(wi, 1);
+  }
+
+  G.streak = prev.streak > 0 ? prev.streak - 1 : 0;
+  document.getElementById('hud-streak').innerText = G.streak + '🔥';
+
+  // Replay this question without adding a new snapshot
+  G.qNum = Math.max(1, G.qNum - 1);
+  G.answered = false;
+  G.currentData = prev.data;
+  renderQuestion(prev.data);
+  showToast('↩️ Went back one question', 'var(--text2)');
+}
+
+// ─── SAVE / BOOKMARK ───
+function saveQuestion() {
+  const data = G.currentData;
+  if(!data) return;
+  const sb = document.getElementById('save-btn');
+  const idx = G.savedQuestions.findIndex(q => q.q === data.q);
+  if(idx > -1) {
+    G.savedQuestions.splice(idx, 1);
+    sb.classList.remove('saved');
+    sb.title = 'Bookmark this question';
+    showToast('🔖 Bookmark removed', 'var(--text2)');
+  } else {
+    G.savedQuestions.push({ q: data.q, a: data.a, s: data.s, e: data.e });
+    sb.classList.add('saved');
+    sb.title = 'Already bookmarked';
+    showToast('🔖 Question saved!', 'var(--brand2)');
+  }
+  localStorage.setItem('bs_saved', JSON.stringify(G.savedQuestions));
+}
+
+// Render a question from data object (used by goBack)
+function renderQuestion(data) {
+  const colours = { Maths:['var(--math-c)','#000'], English:['var(--eng-c)','#fff'], Science:['var(--sci-c)','#000'], Geography:['var(--geo-c)','#000'], History:['var(--hist-c)','#fff'], General:['var(--gen-c)','#fff'] };
+  const [bg, fg] = colours[data.s] || ['var(--brand)','#fff'];
+  const pill = document.getElementById('subj-pill');
+  pill.innerText = data.s; pill.style.background = bg; pill.style.color = fg;
+  const diffLabels = { easy:'⭐ Easy', medium:'⭐⭐ Medium', hard:'⭐⭐⭐ Hard' };
+  document.getElementById('diff-pill').innerText = diffLabels[data.d] || data.d;
+  document.getElementById('q-counter').innerText = `Q ${G.qNum} of ${G.totalQ}`;
+  document.getElementById('hud-q').innerText = `${G.qNum}/${G.totalQ}`;
+  document.getElementById('question').innerText = data.q;
+  document.getElementById('exp-box').style.display = 'none';
+  document.getElementById('exp-text').innerText = data.e;
+  document.getElementById('nav-btns').classList.remove('visible');
+  document.getElementById('back-btn').disabled = G.history.length === 0;
+
+  // Reset lifelines UI
+  document.getElementById('ll-5050').disabled = G.ll_5050;
+  document.getElementById('ll-hint').disabled = G.ll_hint;
+  document.getElementById('ll-skip').disabled = G.ll_skip;
+  document.getElementById('ll-5050').classList.toggle('used', G.ll_5050);
+  document.getElementById('ll-hint').classList.toggle('used', G.ll_hint);
+  document.getElementById('ll-skip').classList.toggle('used', G.ll_skip);
+
+  let pool = shuffle([data.a, ...data.o.slice(0,3)].filter((v,i,a)=>a.indexOf(v)===i)).slice(0,4);
+  if(!pool.includes(data.a)) { pool[0] = data.a; pool = shuffle(pool); }
+  const opts = document.getElementById('opts');
+  opts.innerHTML = '';
+  pool.forEach(text => {
+    const b = document.createElement('button');
+    b.className = 'opt-btn'; b.innerText = text; b.dataset.val = text;
+    b.onclick = () => checkAnswer(text, b);
+    opts.appendChild(b);
+  });
+}
+
+// ─── LIFELINES ───
+function use5050() {
+  if(G.ll_5050 || G.answered) return;
+  G.ll_5050 = true; G.lifelinesUsed++;
+  document.getElementById('ll-5050').disabled = true;
+  document.getElementById('ll-5050').classList.add('used');
+  const data = G.currentData;
+  const allBtns = document.querySelectorAll('.opt-btn');
+  let removed = 0;
+  allBtns.forEach(b => {
+    if(b.dataset.val !== data.a && removed < 2) { b.classList.add('faded'); b.disabled = true; removed++; }
+  });
+  showToast('✂️ Two wrong answers removed!', 'var(--brand2)');
+}
+function useHint() {
+  if(G.ll_hint || G.answered) return;
+  G.ll_hint = true; G.lifelinesUsed++;
+  document.getElementById('ll-hint').disabled = true;
+  document.getElementById('ll-hint').classList.add('used');
+  const data = G.currentData;
+  document.getElementById('exp-box').style.display = 'block';
+  // Highlight the correct answer
+  document.querySelectorAll('.opt-btn').forEach(b => {
+    if(b.dataset.val === data.a) b.classList.add('hint-hl');
+  });
+  showToast('💡 Hint revealed!', 'var(--brand2)');
+}
+function useSkip() {
+  if(G.ll_skip || G.answered) return;
+  G.ll_skip = true; G.lifelinesUsed++;
+  document.getElementById('ll-skip').disabled = true;
+  document.getElementById('ll-skip').classList.add('used');
+  G.answered = true;
+  clearInterval(G.timerInterval);
+  showToast('⏭️ Question skipped', 'var(--text2)');
+  setTimeout(nextQ, 500);
+}
+
+// ─── READ ALOUD ───
+function readAloud() {
+  if(!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const utt = new SpeechSynthesisUtterance(G.currentData.q);
+  utt.rate = 0.9; utt.pitch = 1;
+  window.speechSynthesis.speak(utt);
+}
+
+// ─── XP & LEVELS ───
+const XP_LEVELS = [0,100,250,450,700,1000,1400,1900,2500,3200,4000];
+function updateXP() {
+  const lvl = XP_LEVELS.findIndex((x,i) => G.xp < (XP_LEVELS[i+1]||Infinity));
+  const clampedLvl = Math.max(0, lvl);
+  const nextXP = XP_LEVELS[clampedLvl+1] || XP_LEVELS[XP_LEVELS.length-1];
+  const prevXP = XP_LEVELS[clampedLvl] || 0;
+  const pct = ((G.xp - prevXP) / (nextXP - prevXP)) * 100;
+  if(clampedLvl+1 > G.level) {
+    G.level = clampedLvl+1;
+    showToast(`🎉 Level Up! You're now Level ${G.level}!`, 'var(--brand2)');
+  }
+  document.getElementById('xp-lbl').innerText = `Level ${clampedLvl+1}`;
+  document.getElementById('xp-num').innerText = G.xp + ' XP';
+  document.getElementById('xp-fill').style.width = Math.min(100,pct) + '%';
+}
+
+// ─── BADGES ───
+function checkBadges() {
+  BADGES.forEach(badge => {
+    if(!G.allBadges.has(badge.id) && badge.condition(G)) {
+      G.allBadges.add(badge.id);
+      G.badgesEarned.push(badge);
+      localStorage.setItem('bs_badges', JSON.stringify([...G.allBadges]));
+      showBadgePopup(badge);
+    }
+  });
+}
+function showBadgePopup(badge) {
+  document.getElementById('bp-icon').innerText = badge.icon;
+  document.getElementById('bp-name').innerText = badge.name;
+  document.getElementById('bp-desc').innerText = badge.desc;
+  const popup = document.getElementById('badge-popup');
+  popup.classList.add('show');
+  setTimeout(() => popup.classList.remove('show'), 3000);
+}
+
+// ─── TOAST ───
+let toastTimeout;
+function showToast(msg, color) {
+  clearTimeout(toastTimeout);
+  const t = document.getElementById('toast');
+  t.innerText = msg;
+  t.style.borderColor = color || 'var(--border)';
+  t.classList.add('show');
+  toastTimeout = setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// ─── END GAME ───
+function endGame() {
+  clearInterval(G.timerInterval);
+  checkBadges();
+
+  const pct = G.totalCorrect / G.totalQ;
+  let trophy = '🏆', title = 'Well Done!', sub = '';
+  if(pct === 1)       { trophy='💎'; title='PERFECT!'; sub='You got every single question right! Incredible!'; }
+  else if(pct >= 0.8) { trophy='🥇'; title='Brilliant!'; sub=`${G.totalCorrect}/${G.totalQ} correct — you're a star!`; }
+  else if(pct >= 0.6) { trophy='🥈'; title='Great Job!'; sub=`${G.totalCorrect}/${G.totalQ} correct — keep it up!`; }
+  else if(pct >= 0.4) { trophy='🥉'; title='Good Effort!'; sub=`${G.totalCorrect}/${G.totalQ} correct — practice makes perfect.`; }
+  else                { trophy='📚'; title='Keep Studying!'; sub=`${G.totalCorrect}/${G.totalQ} correct — you'll get there!`; }
+
+  document.getElementById('end-trophy').innerText = trophy;
+  document.getElementById('end-title').innerText = title;
+  document.getElementById('end-sub').innerText = sub;
+  document.getElementById('es-score').innerText = G.score;
+  document.getElementById('es-correct').innerText = `${G.totalCorrect}/${G.totalQ}`;
+  document.getElementById('es-best-streak').innerText = G.bestStreak;
+
+  // Badges
+  const allEarned = BADGES.filter(b => G.allBadges.has(b.id));
+  if(allEarned.length > 0) {
+    document.getElementById('badges-section').style.display = 'block';
+    document.getElementById('badges-row').innerHTML = allEarned.map(b =>
+      `<div class="badge-chip"><span>${b.icon}</span><span>${b.name}</span></div>`
+    ).join('');
+  } else {
+    document.getElementById('badges-section').style.display = 'none';
+  }
+
+  // Wrong answers review
+  if(G.wrongAnswers.length > 0) {
+    document.getElementById('review-section').style.display = 'block';
+    document.getElementById('review-list').innerHTML = G.wrongAnswers.map(w =>
+      `<div class="review-item">
+        <div class="rq">${w.q}</div>
+        <div class="ra">✅ Correct: ${w.correct}</div>
+        <div class="rw">❌ Your answer: ${w.chosen}</div>
+      </div>`
+    ).join('');
+  } else {
+    document.getElementById('review-section').style.display = 'none';
+  }
+
+  // Saved/bookmarked questions
+  if(G.savedQuestions.length > 0) {
+    document.getElementById('saved-section').style.display = 'block';
+    document.getElementById('saved-list').innerHTML = G.savedQuestions.map(w =>
+      `<div class="review-item" style="border-left-color:var(--brand2)">
+        <div class="rq">${w.s} — ${w.q}</div>
+        <div class="ra">✅ Answer: ${w.a}</div>
+        <div style="font-size:0.78rem;color:var(--text2);margin-top:4px;">💡 ${w.e}</div>
+      </div>`
+    ).join('');
+  } else {
+    document.getElementById('saved-section').style.display = 'none';
+  }
+
+  showScreen('end-screen');
+}
+</script>
+</body>
+</html>
